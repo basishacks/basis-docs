@@ -7,6 +7,7 @@
     "node": ">=24"
   },
   "overrides": {
+    "vite": "7.3.6",
     "esbuild": "0.28.1"
   },
   "scripts": {
@@ -18,6 +19,8 @@
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
-    "vitepress": "1.6.4"
+    "mermaid": "^11.12.0",
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
   }
 }

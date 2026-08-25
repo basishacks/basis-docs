@@ -2,22 +2,31 @@
 layout: home
 
 hero:
-  name: "basis-auth"
-  text: "Authentication for Basis applications"
-  tagline: A focused OpenID Connect provider backed by Microsoft Entra ID and PostgreSQL.
+  name: basis-auth
+  text: The identity boundary for Basis applications
+  tagline: A compact OpenID Connect provider with an Entra-style management portal. Delegates human login to Microsoft, issues tokens to your apps, and keeps every administrative action auditable.
   actions:
     - theme: brand
-      text: View on GitHub
-      link: https://github.com/basishacks/basis-auth
+      text: Get Started
+      link: /getting-started
     - theme: alt
-      text: Read the README
-      link: https://github.com/basishacks/basis-auth/blob/main/README.md
+      text: Architecture
+      link: /architecture
+    - theme: alt
+      text: Management Portal
+      link: /portal
 
 features:
-  - title: Microsoft Entra login
-    details: Delegates human authentication to Microsoft Entra ID while keeping application sessions separate.
-  - title: OAuth and OpenID Connect
-    details: Provides a deliberately small authorization, token, UserInfo, JWKS, revocation, and logout surface.
-  - title: PostgreSQL identity state
-    details: Stores identities, permissions, clients, grants, sessions, authorization codes, and refresh-token state.
+  - icon: 🛡️
+    title: Hardened by default
+    details: Sliding-window rate limits, PKCE everywhere, sandboxed image serving, __Host- cookies, append-only audit tables enforced by database grants.
+  - icon: ⚡
+    title: Fast on hot paths
+    details: Single-query identity assembly, memoized client metadata, atomic refresh rotation, keyset pagination that never degrades.
+  - icon: 🗂️
+    title: Full admin surface
+    details: Users, app registrations with rotating secrets, resource servers, sessions, consents, sign-in logs, and an immutable audit trail.
+  - icon: 🔑
+    title: Local accounts + MFA
+    details: Provision accounts with show-once credentials, NIST-style password policy, TOTP with hashed recovery codes.
 ---
