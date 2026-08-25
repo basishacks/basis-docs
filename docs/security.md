@@ -67,3 +67,9 @@ flowchart LR
 | IP allowlist | Only listed addresses reach the portal |
 | Force sign-out | Destroys sessions and refresh-token families instantly |
 | Disable account | Blocks sign-in everywhere and bumps the token barrier |
+
+## Transport and logging
+
+Production responses include HSTS (`max-age=63072000; includeSubDomains`).
+Log lines flatten newlines so request-influenced strings cannot forge entries,
+and local password failures count against both the account and the source IP.
