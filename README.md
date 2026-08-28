@@ -1,6 +1,6 @@
-# basis-docs
+# basis-auth docs
 
-Documentation for Basis services and integrations.
+Documentation for the basis-auth OpenID Connect provider and DevConnect.
 
 ## Development
 
