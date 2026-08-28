@@ -9,7 +9,7 @@ flowchart TD
   REQ[Incoming request] --> IP{IP allowlist?}
   IP -- blocked --> R403[403]
   IP -- ok --> BL[Body size limit]
-  BL --> RL[Rate limit<br/>sliding window per IP]
+   BL --> RL[Rate limit<br/>fixed window per IP+route]
   RL --> LOCK{Portal locked?}
   LOCK -- yes --> R503[503 for all APIs]
   LOCK -- no --> AUTH{Session valid?}
@@ -20,9 +20,12 @@ flowchart TD
   T --> NEXT[Route handler]
 ```
 
-Rate limits are O(1) sliding-window counters. The token endpoint adds
-exponential backoff per client after five consecutive authentication
-failures.
+Rate limiting is a fixed-window, in-memory counter keyed by route and client
+IP (see `src/middleware/rateLimit.ts`). One shared limiter applies 120 requests
+per minute per IP+route to the token, revoke, authorize, consent, Microsoft
+callback, and `/api/me` endpoints; exceeding it returns `429` with a
+`Retry-After` header. The limiter is process-local, so horizontally scaled
+deployments must share state (for example Redis) to stay effective.
 
 ## Content safety
 
@@ -47,8 +50,10 @@ X-Content-Type-Options: nosniff
 
 ## Audit immutability
 
-The portal database role has no `UPDATE` or `DELETE` privilege on history
-tables, making tampering impossible even with full application compromise.
+The portal reaches the database only through the IdP's authenticated internal
+API, which exposes no mutation path for sign-in or audit history. Those tables
+are append-only by construction, making tampering impossible even with full
+portal compromise.
 
 ```mermaid
 flowchart LR
