@@ -12,7 +12,7 @@
 git clone https://github.com/basishacks/basis-auth.git
 cd basis-auth
 cp .env.example .env
-npm install
+bun install
 ```
 
 Open `.env` and set the required values:
@@ -31,8 +31,8 @@ generated automatically. In production you must supply `OIDC_JWKS_JSON` or
 Then create the schema and register the portal client:
 
 ```bash
-npm run db:migrate
-npm run clients:add
+bun run db:migrate
+bun run clients:add
 ```
 
 ## First administrator
@@ -57,7 +57,7 @@ Then fill `MICROSOFT_ISSUER`, `MICROSOFT_CLIENT_ID`, and
 ## Run
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 This single command starts three processes: the IdP on port 3000, a UI watcher,
@@ -70,7 +70,7 @@ flowchart LR
   A[Clone] --> B[Copy .env and fill secrets]
   B --> C[db:migrate + clients:add]
   C --> D[Entra redirect URI]
-  D --> E[npm run dev]
+  D -->   E[bun run dev]
   E --> F[First Microsoft login]
   F --> G[Dashboard]
 ```
