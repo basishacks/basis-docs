@@ -19,7 +19,7 @@ hero:
 features:
   - icon: 🛡️
     title: Hardened by default
-      details: Fixed-window rate limits per IP, PKCE everywhere, sandboxed image serving, __Host- cookies, append-only audit tables enforced by the application.
+    details: Fixed-window rate limits per IP, PKCE everywhere, sandboxed image serving, __Host- cookies, append-only audit tables enforced by the application.
   - icon: ⚡
     title: Fast on hot paths
     details: Single-query identity assembly, memoized client metadata, atomic refresh rotation, keyset pagination that never degrades.
