@@ -12,6 +12,8 @@
 | `/oauth/userinfo` | Identity claims (bearer access token) |
 | `/oauth/revoke` | Refresh-token revocation |
 | `/oauth/logout` | Session logout |
+| `/api/me` | Current SSO identity (requires SSO session) |
+| `/api/picture/:userId` | Avatar bytes; requires the SSO session of the requested user (self only) |
 
 ## Portal API
 
@@ -41,9 +43,39 @@ session; mutations additionally require the `x-csrf-token` header.
 
 ## Environment variables
 
-See `.env.example` in the repository — every variable is documented there,
-including hardening knobs (`TRUST_PROXY`, `RATE_LIMIT_*`,
-`PURGE_INTERVAL_MS`, body limits) and all `ADMIN_*` portal settings.
+All variables are declared and validated in `src/config.ts`; see `.env.example`
+for the canonical list. Required and commonly set variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `NODE_ENV` | `development` (default), `test`, or `production` |
+| `PORT` | HTTP port for the IdP (default 3000) |
+| `DATABASE_URL` | PostgreSQL connection string (required) |
+| `INTERNAL_API_HOST` / `INTERNAL_API_PORT` / `INTERNAL_API_TOKEN` | How the management portal reaches the IdP's internal API |
+| `OIDC_ISSUER` | Public issuer URL (origin only, no path) |
+| `OIDC_COOKIE_KEYS` | Comma-separated ≥ 32-char session cookie keys; placeholder values are rejected at startup |
+| `OIDC_JWKS_JSON` / `OIDC_JWKS_FILE` | RS256 signing keys; auto-generated in non-production when unset |
+| `OIDC_CLIENTS_JSON` / `OIDC_RESOURCES_JSON` | Seeded clients and resource servers (JSON) |
+| `DEFAULT_PERMISSION` | Permission granted to every signed-in user (default `participant`) |
+| `BOOTSTRAP_PERMISSION_GRANTS_JSON` | Email → permissions grants applied on first boot |
+| `MICROSOFT_ISSUER` / `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | Upstream Microsoft Entra OIDC (required in production) |
+| `DEVCONNECT_PORTAL_URL` | Where `/` redirects (default `https://devconnect.biszweb.club/me`) |
+
+Optional hardening and tuning:
+
+| Variable | Purpose |
+| --- | --- |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated origins allowed CORS on `/oauth/token` and `/oauth/userinfo` (default deny) |
+| `SESSION_IDLE_TIMEOUT_MS` | Idle session lifetime (default 12h) |
+| `SESSION_ABSOLUTE_MAX_MS` | Absolute session cap regardless of activity (default 30d) |
+| `DATABASE_POOL_MAX` | Connection pool size (default 10) |
+| `DATABASE_POOL_IDLE_TIMEOUT_MS` | Idle connection timeout (default 10000) |
+| `DATABASE_CONNECTION_TIMEOUT_MS` | Connect timeout (default 5000) |
+| `DATABASE_STATEMENT_TIMEOUT_MS` | Per-statement `statement_timeout` (optional) |
+
+When `CORS_ALLOWED_ORIGINS` is set, matching `Origin` requests on
+`/oauth/token` and `/oauth/userinfo` receive `Access-Control-Allow-Origin`;
+all other origins are denied.
 
 ## Error codes
 
