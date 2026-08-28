@@ -1,52 +1,37 @@
 # Database Setup
 
-Both processes share one PostgreSQL database. The IdP connects through
-`DATABASE_URL`; the portal uses `ADMIN_DATABASE_URL` with a dedicated
-least-privilege role.
+The IdP connects to PostgreSQL through `DATABASE_URL`. The management portal is
+a separate web process that performs administration **through the IdP's
+authenticated internal API** (`INTERNAL_API_TOKEN`); it never connects to
+PostgreSQL directly. There is therefore a single database role in practice: the
+one used by `DATABASE_URL`.
 
-## Role model
+## Audit immutability
 
-```mermaid
-flowchart TD
-  OWNER[Owner / migration role<br/>basis_auth]
-  ADMIN[Portal role<br/>basis_admin]
-
-  OWNER -->|full control| T1[users]
-  OWNER -->|full control| T2[clients, resources]
-  OWNER -->|full control| T3[sessions, tokens]
-  ADMIN -->|read + write| T1
-  ADMIN -->|read + write| T2
-  ADMIN -->|append only| H1[audit_events]
-  ADMIN -->|append only| H2[auth_events]
-```
-
-Audit tables accept `INSERT` and `SELECT` only for the portal role. Even a
-full portal compromise cannot edit or delete history.
+Sign-in and audit history are append-only by construction. The portal has no
+code path that mutates history — it can only read it through the internal API —
+so a full portal compromise cannot rewrite or delete past events.
 
 ## Local development
 
+Use any local PostgreSQL 14+ instance. If you do not have one, install
+PostgreSQL locally or use a managed service; Docker is not required.
+
 ```bash
-docker run -d --name basis-postgres \
-  -e POSTGRES_USER=basis_auth \
-  -e POSTGRES_PASSWORD=basis_auth \
-  -e POSTGRES_DB=basis_auth \
-  -p 5432:5432 postgres:17
-npm run db:migrate
-psql "postgresql://basis_auth:basis_auth@localhost:5432/basis_auth" \
-  -v admin_password=basis_admin_dev \
-  -f scripts/create-admin-role.sql
+# Example using a local PostgreSQL (adjust user/db to match your install)
+createdb basis_auth
+DATABASE_URL="postgresql://$USER@localhost:5432/basis_auth" npm run db:migrate
 ```
 
-Point `.env` at both roles:
+Point `.env` at your instance:
 
 ```text
-DATABASE_URL=postgresql://basis_auth:basis_auth@localhost:5432/basis_auth
-ADMIN_DATABASE_URL=postgresql://basis_admin:basis_admin_dev@localhost:5432/basis_auth
+DATABASE_URL=postgresql://<user>@localhost:5432/basis_auth
 ```
 
 ## Production server
 
-Create the application role and database, then run the admin-role script:
+Create the application role and database, then apply migrations:
 
 ```sql
 CREATE ROLE basis_auth LOGIN PASSWORD 'long-random-password';
@@ -54,18 +39,17 @@ CREATE DATABASE basis_auth OWNER basis_auth;
 ```
 
 ```bash
-psql "$DATABASE_URL" -f scripts/create-admin-role.sql
 DATABASE_URL="$DATABASE_URL" npm run db:migrate
 ```
 
 Restrict network access in `pg_hba.conf`, prefer `hostssl`, and schedule
-nightly `pg_dump` backups.
+nightly `pg_dump` backups. The IdP uses the role behind `DATABASE_URL` for all
+reads and writes; no other role or process touches the database.
 
 ## Managed PostgreSQL
 
-Any PostgreSQL 14+ service works. Connect with provider credentials once to
-create `basis_admin` (apply the GRANT statements if `CREATE ROLE` is
-restricted), then run migrations from any machine that can reach the instance.
+Any PostgreSQL 14+ service works. Connect with provider credentials, then run
+migrations from any machine that can reach the instance.
 
 ## Migrations
 
@@ -73,11 +57,9 @@ restricted), then run migrations from any machine that can reach the instance.
 flowchart LR
   S[Edit schema.ts] --> G[npm run db:generate]
   G --> R[Review SQL]
-  R --> D{dupes?}
-  D -- users change --> C[db:check-dupes]
-  C --> M[npm run db:migrate]
-  D -- clean --> M
+  R --> M[npm run db:migrate]
 ```
 
-Startup always applies pending migrations idempotently, so rolling deploys are
-safe.
+`npm run db:generate` produces a new SQL migration from `src/database/schema.ts`;
+review it, then apply with `npm run db:migrate`. Startup also applies pending
+migrations idempotently (see `src/index.ts`), so rolling deploys are safe.
