@@ -9,11 +9,11 @@ Docker**.
 The default suite needs no database and no Docker:
 
 ```bash
-npm install
-npm test
+bun install
+bun run test
 ```
 
-`npm test` runs Vitest (`vitest run`). It covers:
+`bun run test` runs Vitest (`vitest run`). It covers:
 
 - Protocol behavior (authorize, token, refresh rotation, revocation, userinfo).
 - Identity assembly, client caching, and scope coverage.
@@ -27,7 +27,7 @@ npm test
 Watch mode:
 
 ```bash
-npm run test:watch
+bun run test:watch
 ```
 
 ## Coverage
@@ -47,12 +47,12 @@ To run it:
 
 1. Point `DATABASE_URL` at any reachable PostgreSQL 14+ database.
 2. Set `RUN_POSTGRES_TESTS=1`.
-3. Run `npm test`.
+3. Run `bun run test`.
 
 ```bash
 RUN_POSTGRES_TESTS=1 \
 DATABASE_URL="postgresql://basis_auth:basis_auth@localhost:5432/basis_auth" \
-npm test
+bun run test
 ```
 
 The suite is **skipped** unless both `RUN_POSTGRES_TESTS=1` and a non-empty
