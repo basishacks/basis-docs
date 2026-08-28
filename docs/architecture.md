@@ -67,6 +67,32 @@ sequenceDiagram
   App->>API: Authorization: Bearer access_token
   API-->>App: 200 (JWT validated locally)
   Note over App,IdP: Later, near expiry
-  App->>IdP: POST /oauth/token (refresh_token)
-  IdP-->>App: new refresh token family entry
+   App->>IdP: POST /oauth/token (refresh_token)
+   IdP-->>App: new refresh token family entry
+
+## Performance and caching
+
+The hot path is built for throughput on a single instance:
+
+- **Client metadata cache** (`src/oauth/clientCache.ts`) — clients and resource
+  servers are loaded once and cached in an LRU; `redirectUriSet` and
+  `filterContentSet` make per-request checks O(1).
+- **Single-query identity assembly** — token and userinfo responses are built
+  from one query plus memoized key/permission lookups, so user and permission
+  data are computed once per token issue.
+- **Atomic refresh rotation** — refresh-token families rotate in a single
+  transaction; reuse revokes the whole family.
+- **Rate limiting** (`src/middleware/rateLimit.ts`) — a fixed-window,
+  process-local limiter (120 req/min per IP+route) guards the token, revoke,
+  authorize, consent, Microsoft callback, and `/api/me` endpoints.
+- **Discovery and JWKS caching** — `/.well-known/*` and `/oauth/jwks` send
+  `Cache-Control: public, max-age=300`.
+- **Session idle timeout** — SSO sessions expire after `SESSION_IDLE_TIMEOUT_MS`
+  of inactivity (default 12h) and absolutely after `SESSION_ABSOLUTE_MAX_MS`
+  (default 30d); last-seen time is refreshed at most every five minutes.
+
+Avatar bytes are served from `/api/picture/:userId` and are only available to
+the signed-in user themselves (SSO session required, self-only). The
+`permissions` claim is only emitted when the issued token's scope includes
+`permissions`.
 ```
