@@ -48,7 +48,7 @@ for the canonical list. Required and commonly set variables:
 
 | Variable | Purpose |
 | --- | --- |
-| `NODE_ENV` | `development` (default), `test`, or `production` |
+| `NODE_ENV` | `development` (default), `test`, or `production` — must be `production` on any public host; `development` with a non-localhost issuer fails at startup |
 | `PORT` | HTTP port for the IdP (default 3000) |
 | `DATABASE_URL` | PostgreSQL connection string (required) |
 | `INTERNAL_API_HOST` / `INTERNAL_API_PORT` / `INTERNAL_API_TOKEN` | How the management portal reaches the IdP's internal API |
@@ -89,7 +89,7 @@ These codes are **not** HTTP status codes.
 | 14004 | invalid_client | Bad client secret |
 | 14100 | invalid_request | redirect_uri missing or unregistered |
 | 14401 | invalid_scope | Scope not permitted for this client or resource |
-| 14407 | unknown_resource | Resource not found |
+| 14407 | unknown_resource | Resource audience not registered (named in the error); re-save the client via `bun run clients` or add it to `OIDC_RESOURCES_JSON` |
 | 14501 | invalid_target | Resource not registered for this application |
 | 2400 | invalid_request | Interaction cookie missing or expired |
 | 50040 | server_error | Internal failure during login flow |

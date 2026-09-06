@@ -177,7 +177,7 @@ Field reference (validated by `clientSchema` in `src/config.ts`):
 | --- | --- | --- |
 | `clientId` | yes | Unique. Omitted when using `clients:add` (a UUID is generated and printed). |
 | `name` | no | Displayed on the consent screen. |
-| `clientSecret` | confidential only | Minimum 16 chars. Forbidden on public clients; required on confidential clients. Stored in PostgreSQL as a scrypt hash, never plaintext. |
+| `clientSecret` | confidential only | Minimum 16 chars. Forbidden on public clients; required on confidential clients. Stored in PostgreSQL as a scrypt hash, never plaintext. The TUI auto-generates a `sk-...` secret when left blank (shown once). |
 | `redirectUris` | yes | Minimum 1, all valid URLs. The authorize `redirect_uri` must match one *exactly*. Register every environment's callback (local, staging, prod) — or use separate clients per environment (recommended). |
 | `public` | yes | `false` = confidential BFF (uses `client_secret_basic`). `true` = public client (SPA/native, `token_endpoint_auth_method=none`, must not send a secret). |
 | `scopes` | yes | Union of identity scopes and resource scopes the client may request. Requests outside this set fail with `invalid_scope` (code 14401). |
@@ -206,11 +206,19 @@ configured clients and resource servers (`README.md`, `src/database/seed.ts`). C
   delete it explicitly, otherwise the seed recreates it on next boot.
 - Never delete-then-seed in the wrong order: remove from JSON first, then delete from DB.
 
-CLI management (client JSON without `clientId` generates a UUID):
+Interactive management with `bun run clients` (menu: list, add, remove, edit,
+register resource). Adding or editing walks through name, type, redirect URIs,
+resources, scopes, consent, and account filters; a blank secret auto-generates a
+`sk-...` secret that is printed once (only a scrypt hash is stored). Audiences
+that are not registered yet are created live on save — no restart, no
+`OIDC_*_JSON` edit. New clients authorize instantly; edits apply within ~60s
+(client-cache TTL). The list flags references without a registry row as `WARNING`.
+
+Non-interactive equivalents (client JSON without `clientId` generates a UUID;
+a missing secret is auto-generated):
 
 ```bash
-# Create directly in the database; prints the generated UUID (use a long random secret)
-bun run clients:add -- '{"name":"My App","clientSecret":"replace-with-a-long-random-secret-32-chars-min","redirectUris":["https://app.example.org/oauth/callback"],"public":false,"resources":["urn:basis:api:example"]}'
+bun run clients:add -- '{"name":"My App","redirectUris":["https://app.example.org/oauth/callback"],"public":false,"resources":["urn:basis:api:example"]}'
 
 # Delete by UUID (cascades to its authorization data: requests, codes, refresh families, consents)
 bun run clients:remove -- 3fa85f64-5717-4562-b3fc-2c963f66afa6
@@ -849,6 +857,9 @@ trusted local services, and never expose it to browsers. This is also what power
   refreshed at most every 5 min); `basis_bridge_id` (interaction id, `/oauth` path,
   10 min); `basis_bridge_error` (JSON error payload, readable by JS, `/oauth` path,
   10 min). `Secure` is set in production; non-production binds `Domain=localhost`.
+  Running any public (non-localhost) host without `NODE_ENV=production` breaks every
+  session — browsers drop the `Domain=localhost` dev cookies — and startup refuses
+  `development` with a non-localhost issuer.
   Your app's own cookies follow the same recipe: HTTP-only, `Secure`, `SameSite=Lax`.
 - **CSRF:** your `/login`→`/callback` leg is protected by `state`. Your own POST routes
   need your own CSRF tokens. The IdP's consent POST additionally requires `x-csrf-token`
@@ -891,7 +902,7 @@ The IdP returns OAuth `error` strings plus numeric `code`s. Log both; branch on 
 | 14004 | `invalid_client` | Bad secret | Rotate/fix `clientSecret` (no retry loop) |
 | 14100 | `invalid_request` | `redirect_uri` missing/unregistered | Exact-match the registered URI |
 | 14401 | `invalid_scope` | Scope not permitted for client/resource | Fix requested `scope` / registration |
-| 14407 | `unknown_resource` | Resource not found | Fix `resource` / `OIDC_RESOURCES_JSON` |
+| 14407 | `unknown_resource` | Resource audience has no registry row (the error names it) | Re-save the client via `bun run clients` edit, or add the audience to `OIDC_RESOURCES_JSON` and restart |
 | 14501 | `invalid_target` | Resource not registered for this app | Add audience to client's `resources` |
 | 14429 | `unsupported_response_type` | `response_type` not `code` | Send `response_type=code` |
 | 2400 | `invalid_request` | Interaction cookie missing/expired | Restart login (10-min interaction window) |

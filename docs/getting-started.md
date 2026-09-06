@@ -35,6 +35,12 @@ bun run db:migrate
 bun run clients:add
 ```
 
+`bun run clients:add` opens an interactive walkthrough (name, type, redirect URIs,
+resources, scopes, consent, filters). For a confidential client, leave the secret
+blank to auto-generate a `sk-...` secret — it is printed once and only a scrypt
+hash is stored, so copy it immediately. `bun run clients` opens the full menu
+(list, add, remove, edit, register resource); TUI changes apply live with no restart.
+
 ## First administrator
 
 Grant your Microsoft account portal access on first boot by listing it in
