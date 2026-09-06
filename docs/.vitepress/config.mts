@@ -32,6 +32,7 @@ export default withMermaid(
           items: [
             { text: "Architecture", link: "/architecture" },
             { text: "Getting Started", link: "/getting-started" },
+            { text: "Wiring Up Apps", link: "/wiring-up" },
             { text: "Database Setup", link: "/database" },
           ],
         },
